@@ -56,16 +56,18 @@ For each of the 12 overnight referrals in `data/referral-queue.json`:
 
 ```
 pip install -r requirements.txt
-streamlit run streamlit_app.py
+python3 main.py --ui
 ```
 
-This is a viewer, not a second implementation — it imports and calls the
-exact same `agent.runner.run()` the command-line entry point uses. It
-doesn't change what the agent decides, and it isn't part of the graded
-floor for this problem (interface quality isn't assessed here; see the
+Same entry point as the CLI, one extra flag. This is a viewer, not a
+second implementation — it imports and calls the exact same
+`agent.runner.run()` the plain `python3 main.py` path uses. It doesn't
+change what the agent decides, and it isn't part of the graded floor
+for this problem (interface quality isn't assessed here; see the
 problem document). It exists to make walking through a run and its
-outputs easier in a demo. The command-line path (`python3 main.py`,
-above) has zero dependencies and remains the primary way to run this.
+outputs easier in a demo. Running `python3 main.py` with no flag (the
+graded path)
+above) has zero dependencies and remains the primary, graded way to run this.
 
 ## Project layout
 

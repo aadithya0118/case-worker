@@ -210,3 +210,10 @@ what it is and isn't:
 - The command-line path remains the primary, zero-dependency way to run
   and judge this submission. The UI needs `pip install -r requirements.txt`
   first; the core agent needs nothing beyond the standard library.
+- `main.py --ui` launches it, rather than a separate `streamlit run`
+  invocation, so there's one entry point to remember. This is a flag,
+  not the default: `python3 main.py` with no arguments still runs the
+  plain CLI agent with zero dependencies. That default has to keep
+  working on a machine with nothing installed, since that's exactly
+  what the clean-clone check does before a human looks at anything —
+  making the UI opt-in rather than the default protects that.
