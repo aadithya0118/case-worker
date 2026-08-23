@@ -1,0 +1,3 @@
+# Only needed for the optional UI (streamlit_app.py).
+# The core agent (main.py) has zero dependencies -- see README.
+streamlit>=1.28

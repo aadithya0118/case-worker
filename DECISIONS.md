@@ -194,3 +194,19 @@ queue. For this two-day synthetic-data problem, reloading the policy at each
 referral is sufficient to keep the decision point amendment-aware without
 introducing unnecessary infrastructure.
 
+## The optional Streamlit viewer
+
+`streamlit_app.py` is a viewer added after the rest of this was built and
+tested, for walking through a run live. It's worth being explicit about
+what it is and isn't:
+
+- It is not scored. The problem document states plainly that interface
+  quality isn't assessed for this problem, and I don't want that to be
+  ambiguous in this file.
+- It calls `agent.runner.run()` directly — the same function `main.py`
+  calls. It contains no policy logic, no classification, no gate of its
+  own. If the UI and the CLI ever showed different results for the same
+  queue, that would be a bug in the viewer, not a second opinion.
+- The command-line path remains the primary, zero-dependency way to run
+  and judge this submission. The UI needs `pip install -r requirements.txt`
+  first; the core agent needs nothing beyond the standard library.
