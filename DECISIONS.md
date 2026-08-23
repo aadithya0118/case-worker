@@ -63,6 +63,17 @@ someone's benefit award). A different, defensible design could argue address
 changes are pure record-keeping and permit them outright — I'd want to raise
 that with an actual supervisor rather than decide it unilaterally in code.
 
+## Why there's a briefing on top of the trace and escalations log
+
+`execution_trace.txt` and `escalations.jsonl` are written for an audit —
+that's what section 5 of the policy actually requires, so they stay literal
+and complete. `output/MORNING_BRIEFING.md` is written for the caseworker at
+9am who just wants to know what happened. It's pure narration: it makes no
+decision the policy engine hasn't already made, and if it ever disagreed
+with `escalations.jsonl` about what got escalated, that would be a bug in
+`agent/briefing.py`, not a second opinion. Kept it to one extra module so it
+couldn't become a second source of truth by accident.
+
 ## Why the policy is data, not code
 
 `agent/policy_rules.json` holds every restricted/permitted action type and

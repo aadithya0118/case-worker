@@ -1,8 +1,14 @@
 # The Caseworker's Morning — Agentic AI / Guardrails (Brite Spark 2026, Problem 5)
 
-An agent that performs a caseworker's overnight-referral triage sequence end to
-end, and refuses — structurally, not by instruction — to take any action that
-policy ACA-2026/1 reserves for a supervisor.
+Every morning, a caseworker spends forty minutes reading overnight referrals,
+pulling case history, and drafting triage notes — before they've done anything
+that actually needed their judgement. This agent does that part.
+
+The harder half of the brief wasn't automating the sequence. It was building
+something that knows, for each referral, which parts of the job it's allowed
+to do alone — and for the ones it isn't, stops **because it structurally
+cannot proceed**, not because a prompt told it to be careful. See
+`DECISIONS.md` for exactly what that means and how it's verified.
 
 ## Running it
 
@@ -32,6 +38,10 @@ For each of the 12 overnight referrals in `data/referral-queue.json`:
 
 ## Output, after a run
 
+- `output/MORNING_BRIEFING.md` — the one file meant to actually be read: a
+  plain-prose handoff of what got handled and what needs a human, narrated
+  from decisions the policy engine already made (it doesn't do any judging
+  of its own — see `agent/briefing.py`).
 - `output/execution_trace.txt` — human-readable log of every step taken, in
   order, with the policy basis for each decision. This is what a supervisor
   would read to reconstruct the run.
