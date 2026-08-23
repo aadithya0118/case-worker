@@ -241,22 +241,6 @@ Maintains a detailed record of the processing steps and policy decisions for aud
 
 ---
 
-## 🛡️ Safety and Guardrails
-
-A major objective of this project is to ensure that automation does not bypass human authority.
-
-The system uses structural policy checks before allowing automated actions. When an action requires supervisor approval or falls under a household safety restriction, the automated workflow does not continue with that action.
-
-Instead, the case is escalated or handed off for appropriate human review.
-
-This provides a clear separation between:
-
-**Automated assistance** → repetitive and permitted casework tasks
-
-**Human decision-making** → restricted, sensitive, or approval-dependent actions
-
----
-
 ## 🛠️ Technologies Used
 
 * **Python**
@@ -268,14 +252,7 @@ This provides a clear separation between:
 * **Agent-Based Workflow**
 * **Git & GitHub**
 
----
 
-## 📚 Additional Documentation
-
-* `DECISIONS.md` — explains important implementation and design decisions.
-* `AI-USAGE.md` — documents the use of AI tools during development.
-* `authority-policy.md` — contains the supplied authority policy.
-* `policy_rules.json` — structured representation of policy rules used by the policy engine.
 
 ---
 
