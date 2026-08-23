@@ -1,92 +1,284 @@
-# The Caseworker's Morning — Agentic AI / Guardrails (Brite Spark 2026, Problem 5)
+# Case Worker — Automated Casework Assistant
 
-Every morning, a caseworker spends forty minutes reading overnight referrals,
-pulling case history, and drafting triage notes — before they've done anything
-that actually needed their judgement. This agent does that part.
+An automated casework assistant designed to process overnight referrals, retrieve resident history, validate requested actions against authority policies, and safely determine whether a case can be processed automatically or requires human intervention.
 
-The harder half of the brief wasn't automating the sequence. It was building
-something that knows, for each referral, which parts of the job it's allowed
-to do alone — and for the ones it isn't, stops **because it structurally
-cannot proceed**, not because a prompt told it to be careful. See
-`DECISIONS.md` for exactly what that means and how it's verified.
+The system focuses on **safe automation with policy-based guardrails**, ensuring that restricted actions are never executed without the required approval.
 
-## Running it
+---
 
-Requires Python 3 (standard library only, nothing to install).
+## 📌 Overview
+
+Caseworkers often spend significant time reviewing incoming referrals, retrieving resident information, checking policies, and preparing initial triage notes.
+
+This project automates those repetitive steps while keeping sensitive or restricted decisions under human control.
+
+For each incoming referral, the system retrieves the resident's history, evaluates the requested action against structured policy rules, checks household safety conditions, and determines whether the case can proceed automatically.
+
+Permitted cases can receive automatically drafted triage notes, while cases requiring additional authorization are escalated or handed off for human review.
+
+---
+
+## ✨ Key Features
+
+* Processes overnight case referrals automatically.
+* Retrieves resident history using a mock Resident History API.
+* Validates requested actions against structured authority policies.
+* Uses a policy engine to determine whether an action is permitted.
+* Applies household safety rules before automated triage.
+* Drafts triage notes only for permitted cases.
+* Escalates actions that require supervisor approval.
+* Supports human handoff when automated processing should not continue.
+* Records processing decisions through execution traces.
+* Generates a morning briefing summarizing processed and escalated cases.
+* Provides an optional Streamlit-based interface for demonstration.
+
+---
+
+## 🔄 Project Workflow
+
+```text
+                Overnight Referral Queue
+                         │
+                         ▼
+                  Read Referral
+                         │
+                         ▼
+              Retrieve Resident History
+                         │
+                         ▼
+               Household Safety Check
+                         │
+                         ▼
+                  Policy Engine
+                         │
+                Validate Requested
+                     Action
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+              ▼                     ▼
+        Action Permitted       Approval / Human
+         Unsupervised             Review Needed
+              │                     │
+              ▼                     ▼
+       Draft Triage Note      Escalation / Handoff
+              │                     │
+              └──────────┬──────────┘
+                         ▼
+                  Execution Trace
+                         │
+                         ▼
+                  Morning Briefing
+```
+
+### Workflow Description
+
+The system begins by reading referrals from the overnight referral queue. For each referral, it retrieves the corresponding resident history through the mock Resident History API.
+
+The household information and requested action are then evaluated using predefined safety rules and the structured authority policy.
+
+The **Policy Engine** acts as the decision gate. If an action is permitted without supervision, the system can generate a draft triage note. If supervisor approval or human intervention is required, the system stops automated processing for that action and creates an escalation or handoff instead.
+
+Every important processing step is recorded in an execution trace, allowing the decisions made by the system to be reviewed. After processing the referral queue, the system generates a morning briefing summarizing the results.
+
+---
+
+## 🧩 Main Components
+
+### Policy Engine
+
+Reads the structured policy rules and determines whether a requested action can be performed automatically or requires approval.
+
+### Triage Module
+
+Generates deterministic draft triage notes for referrals that successfully pass the policy and safety checks.
+
+### History Client
+
+Communicates with the mock Resident History API to retrieve relevant resident information.
+
+### Household Rules
+
+Checks household conditions and determines whether additional human review or handoff is required.
+
+### Escalation Module
+
+Creates escalation records when the requested action requires supervisor approval.
+
+### Handoff Module
+
+Transfers cases to human caseworkers when automated processing should not continue.
+
+### Trace Logger
+
+Records the sequence of actions and decisions made during case processing for auditability.
+
+### Runner
+
+Coordinates the complete workflow and connects the individual components of the system.
+
+---
+
+## 📂 Project Structure
+
+```text
+case-worker/
+│
+├── agent/
+│   ├── __init__.py
+│   ├── briefing.py
+│   ├── escalation.py
+│   ├── handoff.py
+│   ├── history_client.py
+│   ├── household_rules.py
+│   ├── policy_engine.py
+│   ├── policy_rules.json
+│   ├── runner.py
+│   ├── trace.py
+│   └── triage.py
+│
+├── challenge/
+│   ├── Amendment ACA-2026-2.md
+│   └── READ ME FIRST.md
+│
+├── data/
+│   ├── authority-policy.md
+│   └── referral-queue.json
+│
+├── services/
+│   ├── _history_data.json
+│   └── history_service.py
+│
+├── .gitignore
+├── AI-USAGE.md
+├── DECISIONS.md
+├── main.py
+├── README.md
+├── requirements.txt
+└── streamlit_app.py
+```
+
+---
+
+## ⚙️ How the Decision Process Works
+
+For each referral:
+
+1. The referral is loaded from `data/referral-queue.json`.
+2. Resident history is retrieved from the mock history service.
+3. Household conditions are evaluated.
+4. The requested action is checked against `agent/policy_rules.json`.
+5. The policy engine determines whether the action is permitted.
+6. Permitted cases can receive a draft triage note.
+7. Restricted cases are escalated or handed off for human review.
+8. Processing continues with the remaining referrals.
+9. All major decisions are recorded in the execution trace.
+10. A final morning briefing summarizes the processing results.
+
+---
+
+## ▶️ Running the Project
+
+### Standard Execution
+
+The core application can be run using:
 
 ```bash
-python3 main.py
+python main.py
 ```
 
-That's it. This single command starts the mock Resident History API as a
-background process, runs the full referral queue through the agent, prints a
-live trace to the console, and shuts the API down again when it's finished.
+The application starts the mock Resident History API, processes the referral queue, records the execution trace, generates the appropriate outputs, and shuts down the service when processing is complete.
 
-## What it does
+---
 
-For each of the 12 overnight referrals in `data/referral-queue.json`:
+## 🖥️ Optional User Interface
 
-1. Reads the referral.
-2. Pulls the resident's history from the mock API.
-3. Checks the referral's requested action against `agent/policy_rules.json`
-   (a structured version of `data/authority-policy.md`).
-4. If the action is permitted unsupervised → drafts a triage note (a proposal
-   only — it has no effect on the case) to `output/triage_notes/`.
-5. If the action requires supervisor approval → **does not attempt it**, and
-   writes an escalation record to `output/escalations.jsonl` instead, then
-   carries on to the next referral.
+Install the required dependencies:
 
-## Output, after a run
-
-- `output/MORNING_BRIEFING.md` — the one file meant to actually be read: a
-  plain-prose handoff of what got handled and what needs a human, narrated
-  from decisions the policy engine already made (it doesn't do any judging
-  of its own — see `agent/briefing.py`).
-- `output/execution_trace.txt` — human-readable log of every step taken, in
-  order, with the policy basis for each decision. This is what a supervisor
-  would read to reconstruct the run.
-- `output/execution_trace.jsonl` — same trace, machine-readable.
-- `output/triage_notes/<referral_id>.md` — one drafted note per permitted
-  referral.
-- `output/escalations.jsonl` — one record per referral the agent declined to
-  action, with the policy section that applies and enough context for a
-  supervisor to act without re-opening the case.
-
-## Optional: interactive viewer
-
-```
+```bash
 pip install -r requirements.txt
-python3 main.py --ui
 ```
 
-Same entry point as the CLI, one extra flag. This is a viewer, not a
-second implementation — it imports and calls the exact same
-`agent.runner.run()` the plain `python3 main.py` path uses. It doesn't
-change what the agent decides, and it isn't part of the graded floor
-for this problem (interface quality isn't assessed here; see the
-problem document). It exists to make walking through a run and its
-outputs easier in a demo. Running `python3 main.py` with no flag (the
-graded path)
-above) has zero dependencies and remains the primary, graded way to run this.
+Then run the application with the UI enabled:
 
-## Project layout
-
-```
-data/                       given data pack (referral queue, policy document)
-services/history_service.py given mock Resident History API
-agent/
-  policy_rules.json          structured policy — the source of truth for what's permitted
-  policy_engine.py           reads policy_rules.json, classifies a requested action
-  history_client.py          calls the history API, fails gracefully if it can't
-  triage.py                  drafts a triage note (template-based, deterministic)
-  escalation.py               section-4 escalation records
-  handoff.py                  ACA-2026/2 caseworker hand-offs
-  household_rules.py          determines whether household has a person under 18
-  trace.py                    execution trace logger
-  runner.py                   orchestrates the above
-main.py                      entry point
+```bash
+python main.py --ui
 ```
 
-See `DECISIONS.md` for the reasoning behind the design, in particular how the
-approval gate is enforced and how the two ambiguous referrals were resolved.
-See `AI-USAGE.md` for how AI tooling was used while building this.
+The interface provides a convenient way to demonstrate the processing workflow and view the generated results.
+
+---
+
+## 📤 Generated Outputs
+
+After execution, the system can generate:
+
+```text
+output/
+│
+├── MORNING_BRIEFING.md
+├── execution_trace.txt
+├── execution_trace.jsonl
+├── escalations.jsonl
+└── triage_notes/
+```
+
+### Morning Briefing
+
+Provides a human-readable summary of what the automated assistant processed and which cases require attention.
+
+### Triage Notes
+
+Contains automatically drafted notes for referrals that were permitted by the policy engine.
+
+### Escalations
+
+Records referrals that could not be processed automatically because supervisor approval was required.
+
+### Execution Trace
+
+Maintains a detailed record of the processing steps and policy decisions for audit and review.
+
+---
+
+## 🛡️ Safety and Guardrails
+
+A major objective of this project is to ensure that automation does not bypass human authority.
+
+The system uses structural policy checks before allowing automated actions. When an action requires supervisor approval or falls under a household safety restriction, the automated workflow does not continue with that action.
+
+Instead, the case is escalated or handed off for appropriate human review.
+
+This provides a clear separation between:
+
+**Automated assistance** → repetitive and permitted casework tasks
+
+**Human decision-making** → restricted, sensitive, or approval-dependent actions
+
+---
+
+## 🛠️ Technologies Used
+
+* **Python**
+* **Streamlit**
+* **JSON**
+* **Markdown**
+* **REST-style Mock API**
+* **Rule-Based Policy Engine**
+* **Agent-Based Workflow**
+* **Git & GitHub**
+
+---
+
+## 📚 Additional Documentation
+
+* `DECISIONS.md` — explains important implementation and design decisions.
+* `AI-USAGE.md` — documents the use of AI tools during development.
+* `authority-policy.md` — contains the supplied authority policy.
+* `policy_rules.json` — structured representation of policy rules used by the policy engine.
+
+---
+
+## 🎯 Project Objective
+
+The objective of the project is to demonstrate how an automated casework assistant can reduce repetitive manual work while maintaining strict policy controls, transparent decision-making, auditability, and appropriate human oversight.
