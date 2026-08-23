@@ -39,21 +39,34 @@ st.markdown(
     """
     <style>
         .block-container { padding-top: 2.5rem; max-width: 1100px; }
-        h1 { font-weight: 600; letter-spacing: -0.02em; }
-        [data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: 600; }
+        h1 {
+            font-weight: 600; letter-spacing: -0.02em;
+            border-bottom: 2px solid #E3A008;
+            padding-bottom: 0.6rem; display: inline-block;
+        }
+        [data-testid="stMetricValue"] { font-size: 1.9rem; font-weight: 600; color: #E3A008; }
+        [data-testid="stMetric"] {
+            background-color: #1B1E26; border: 1px solid #2A2E38;
+            border-radius: 10px; padding: 14px 16px;
+        }
         .stTabs [data-baseweb="tab"] { font-size: 0.95rem; }
+        .stTabs [aria-selected="true"] { color: #E3A008 !important; }
         div[data-testid="stMarkdownContainer"] pre {
-            background-color: #F4F6F8;
-            border: 1px solid #E5E7EB;
-            border-radius: 6px;
+            background-color: #1B1E26;
+            border: 1px solid #2A2E38;
+            border-radius: 8px;
+        }
+        div[data-testid="stExpander"] {
+            border: 1px solid #2A2E38; border-radius: 8px;
         }
         .status-pill {
-            display: inline-block; padding: 2px 10px; border-radius: 999px;
-            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em;
+            display: inline-block; padding: 3px 12px; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+            border: 1px solid transparent;
         }
-        .pill-drafted { background:#E8F3EC; color:#1E7B45; }
-        .pill-handoff { background:#EEF1FB; color:#3F51B5; }
-        .pill-escalated { background:#FBEEEE; color:#B3261E; }
+        .pill-drafted { background:#16261C; color:#5FCB8C; border-color:#245234; }
+        .pill-handoff { background:#161B2E; color:#8CA3F5; border-color:#2A3A66; }
+        .pill-escalated { background:#2E1717; color:#F08A8A; border-color:#5A2A2A; }
     </style>
     """,
     unsafe_allow_html=True,
