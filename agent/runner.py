@@ -24,6 +24,7 @@ from history_client import HistoryClient, HistoryClientError
 from triage import draft_triage_note
 from escalation import EscalationQueue
 from trace import TraceLogger
+from briefing import build_briefing
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
@@ -80,7 +81,7 @@ def run():
     trace.log(None, "queue_loaded", "authority-policy.md 2.1",
               f"Loaded {len(referrals)} referrals from overnight queue.")
 
-    drafted, escalated, failed = 0, 0, 0
+    outcomes = {"drafted": [], "escalated": [], "failed": []}
 
     try:
         for referral in referrals:
@@ -96,7 +97,7 @@ def run():
                 trace.log(rid, "history_fetch_failed", "2.2", str(e))
                 # Partial-failure handling: this referral couldn't be
                 # fully triaged, but that must not stop the others.
-                failed += 1
+                outcomes["failed"].append((referral, None))
                 continue
 
             classification = policy.classify(referral["requested_action"])
@@ -113,19 +114,26 @@ def run():
                     f.write(note)
                 trace.log(rid, "triage_note_drafted", classification.policy_basis,
                           f"Note written to output/triage_notes/{rid}.md (proposal only, per 2.4).")
-                drafted += 1
+                outcomes["drafted"].append((referral, classification))
             else:
-                record = escalations.escalate(referral, history, classification)
+                escalations.escalate(referral, history, classification)
                 trace.log(
                     rid, "ESCALATED", classification.policy_basis,
                     f"Not actioned. {classification.note} "
                     f"Recorded to output/escalations.jsonl for supervisor decision."
                 )
-                escalated += 1
+                outcomes["escalated"].append((referral, classification))
     finally:
         service_proc.terminate()
         service_proc.wait(timeout=5)
         trace.log(None, "service_stop", None, "Resident History API stopped.")
+
+    drafted, escalated, failed = len(outcomes["drafted"]), len(outcomes["escalated"]), len(outcomes["failed"])
+
+    briefing_text = build_briefing(outcomes)
+    briefing_path = os.path.join(OUTPUT_DIR, "MORNING_BRIEFING.md")
+    with open(briefing_path, "w", encoding="utf-8") as f:
+        f.write(briefing_text)
 
     summary = (
         f"\nRun complete. {len(referrals)} referrals processed: "
@@ -133,9 +141,11 @@ def run():
     )
     trace.log(None, "run_complete", None, summary.strip())
     print(summary)
-    print(f"Triage notes:  {triage_dir}/")
-    print(f"Escalations:   {os.path.join(OUTPUT_DIR, 'escalations.jsonl')}")
-    print(f"Full trace:    {os.path.join(OUTPUT_DIR, 'execution_trace.txt')}")
+    print(f"\n{briefing_text}\n")
+    print(f"Morning briefing: {briefing_path}")
+    print(f"Triage notes:     {triage_dir}/")
+    print(f"Escalations:      {os.path.join(OUTPUT_DIR, 'escalations.jsonl')}")
+    print(f"Full trace:       {os.path.join(OUTPUT_DIR, 'execution_trace.txt')}")
 
 
 if __name__ == "__main__":
