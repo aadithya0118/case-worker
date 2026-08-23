@@ -62,7 +62,9 @@ agent/
   policy_engine.py           reads policy_rules.json, classifies a requested action
   history_client.py          calls the history API, fails gracefully if it can't
   triage.py                  drafts a triage note (template-based, deterministic)
-  escalation.py               the approval gate — see DECISIONS.md
+  escalation.py               section-4 escalation records
+  handoff.py                  ACA-2026/2 caseworker hand-offs
+  household_rules.py          determines whether household has a person under 18
   trace.py                    execution trace logger
   runner.py                   orchestrates the above
 main.py                      entry point

@@ -124,3 +124,73 @@ it* are two different files that don't need to change together.
 - I have not tested what happens if the escalation or triage-notes directory
   is not writable, or if the referral queue JSON is malformed. The agent
   would currently crash rather than fail gracefully in either case.
+
+## Day-two amendment: ACA-2026/2
+
+ACA-2026/2 adds section 3.9: where the Department's household composition
+includes a person under 18, the assistant must not draft the triage note.
+The case must instead be handed to a caseworker with the work already done.
+
+### What changed
+
+The control flow now has a distinct branch after history retrieval and
+household determination:
+
+1. Read referral.
+2. Retrieve Department history.
+3. Determine household composition from the Department record.
+4. Apply the existing section-3 restriction first.
+5. If the requested action is otherwise permitted but 3.9 applies, create a
+   **caseworker hand-off** and do not call `draft_triage_note()`.
+6. Only a permitted, non-child-household referral reaches note drafting.
+
+The hand-off is deliberately separate from `EscalationQueue`. An escalation
+means the Department must decide whether a restricted action may happen at
+all.
+A hand-off means ordinary casework still needs a human because the amendment
+says the assistant may not perform that particular drafting step.
+
+### What work is preserved
+
+The hand-off records the referral, the retrieved history status, household
+determination, identified people under 18, requested action, and the policy
+basis. It also writes a human-readable hand-off file. It does not create a
+triage note.
+
+If household composition cannot be established, ACA-2026/2 section 5.2 makes
+3.9 apply. The assistant therefore hands the case to a caseworker rather
+than guessing.
+
+### How the day-two change is supported during a run
+
+`PolicyEngine` reloads `policy_rules.json` before each referral's policy
+decision. The new amendment is represented as policy data rather than a
+special-case branch hidden inside the original triage logic. This means a
+policy-file amendment can affect referrals that have not yet reached their
+decision point, including a queue already part-way through processing.
+
+### Interpretation choice
+
+The amendment says a person is "under 18" but does not specify the clock to
+use for calculating age. For deterministic casework behavior, this
+implementation uses the referral's `received_at` date as the reference date.
+That prevents the demo result from changing simply because the machine's
+current date changes.
+
+### What I did not change
+
+I did not turn the new rule into an escalation. The amendment explicitly says
+a hand-off under 3.2 is not an escalation under section 4.
+
+I also did not modify `triage.py` to try to draft and then discard a note.
+The restriction applies to drafting itself, so the branch prevents the
+drafting function from being called at all.
+
+### What I would improve with more time
+
+I would add a configurable policy-effective timestamp and a live amendment
+watcher if the real system had policy changes arriving during a long-running
+queue. For this two-day synthetic-data problem, reloading the policy at each
+referral is sufficient to keep the decision point amendment-aware without
+introducing unnecessary infrastructure.
+

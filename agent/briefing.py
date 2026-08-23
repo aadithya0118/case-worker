@@ -1,64 +1,106 @@
 """
-Generates the morning briefing: a plain-prose handoff, not a log dump.
+Generates the morning briefing.
 
-Everything else this agent produces (trace, escalations.jsonl, triage notes)
-is written for a supervisor doing an audit. This is written for the
-caseworker walking in at 9am, who wants to know in thirty seconds what
-happened to their overnight queue and what still needs them.
-
-No new judgement happens here -- it only narrates decisions the policy
-engine already made. If this file disagreed with escalations.jsonl about
-what got escalated, that would be a bug, not a style choice.
+ACA-2026/2 introduces a caseworker hand-off that is deliberately distinct
+from a section-4 escalation.
 """
+
 from datetime import datetime
 
 
 def build_briefing(referrals_by_outcome, run_date=None):
-    """
-    referrals_by_outcome: dict with keys 'drafted', 'escalated', 'failed',
-    each a list of (referral, classification_or_None) tuples.
-    """
     run_date = run_date or datetime.now().strftime("%A %d %B %Y")
+
     drafted = referrals_by_outcome["drafted"]
     escalated = referrals_by_outcome["escalated"]
-    failed = referrals_by_outcome["failed"]
-    total = len(drafted) + len(escalated) + len(failed)
+    handed_off = referrals_by_outcome["handed_off"]
+    # "failed" is no longer a real outcome bucket: a history-fetch failure
+    # now always routes to an escalation or a hand-off (never silently
+    # dropped), so runner.py doesn't populate this key. Kept optional here
+    # rather than removed outright, in case a future change reintroduces
+    # a genuine can't-complete-at-all case.
+    failed = referrals_by_outcome.get("failed", [])
 
-    lines = []
-    lines.append(f"MORNING BRIEFING — {run_date}")
-    lines.append("=" * (len(lines[0])))
-    lines.append("")
-    lines.append(f"{total} referrals came in overnight. Here's where they stand.")
-    lines.append("")
+    total = (
+        len(drafted)
+        + len(escalated)
+        + len(handed_off)
+        + len(failed)
+    )
+
+    lines = [
+        f"MORNING BRIEFING — {run_date}",
+        "=" * len(f"MORNING BRIEFING — {run_date}"),
+        "",
+        f"{total} referrals came in overnight. Here's where they stand.",
+        "",
+    ]
 
     if drafted:
-        lines.append(f"HANDLED — {len(drafted)} triaged, notes ready for review")
-        lines.append("-" * 60)
-        for referral, classification in drafted:
-            lines.append(f"  {referral['referral_id']}  ({referral['resident_ref']})")
-            lines.append(f"    {referral['summary']}")
-            lines.append(f"    -> note in output/triage_notes/{referral['referral_id']}.md")
+        lines += [
+            f"HANDLED — {len(drafted)} triaged, notes ready for review",
+            "-" * 60,
+        ]
+
+        for referral, _ in drafted:
+            lines += [
+                f"  {referral['referral_id']} ({referral['resident_ref']})",
+                f"    {referral['summary']}",
+                f"    -> note in output/triage_notes/{referral['referral_id']}.md",
+            ]
+
+        lines.append("")
+
+    if handed_off:
+        lines += [
+            f"CASEWORKER HAND-OFF — {len(handed_off)} ordinary casework item(s)",
+            "-" * 60,
+        ]
+
+        for referral, _ in handed_off:
+            lines += [
+                f"  {referral['referral_id']} ({referral['resident_ref']})",
+                f"    {referral['summary']}",
+                f"    -> hand-off in output/caseworker_handoffs/{referral['referral_id']}.md",
+                "    -> no triage note was drafted by the assistant",
+            ]
+
         lines.append("")
 
     if escalated:
-        lines.append(f"NEEDS YOU — {len(escalated)} outside what I'm allowed to do alone")
-        lines.append("-" * 60)
+        lines += [
+            f"NEEDS SUPERVISOR — {len(escalated)} restricted action(s)",
+            "-" * 60,
+        ]
+
         for referral, classification in escalated:
-            lines.append(f"  {referral['referral_id']}  ({referral['resident_ref']})  "
-                         f"— policy {classification.policy_basis}")
-            lines.append(f"    Asked for: {referral['requested_action']}")
-            lines.append(f"    Why I stopped: {classification.note}")
+            lines += [
+                f"  {referral['referral_id']} ({referral['resident_ref']}) "
+                f"— policy {classification.policy_basis}",
+                f"    Asked for: {referral['requested_action']}",
+                f"    Why stopped: {classification.note}",
+            ]
+
         lines.append("")
 
     if failed:
-        lines.append(f"COULDN'T CHECK — {len(failed)} where history was unreachable")
-        lines.append("-" * 60)
+        lines += [
+            f"COULDN'T COMPLETE — {len(failed)} referral(s)",
+            "-" * 60,
+        ]
+
         for referral, _ in failed:
-            lines.append(f"  {referral['referral_id']}  ({referral['resident_ref']})  "
-                         f"— retry this one, I only had the referral text to go on")
+            lines.append(
+                f"  {referral['referral_id']} ({referral['resident_ref']})"
+            )
+
         lines.append("")
 
-    lines.append("Nothing above changed a resident's case. The handled ones are "
-                 "drafts waiting on you; the rest are waiting on a supervisor.")
+    lines += [
+        "SAFETY SUMMARY:",
+        "No restricted action was executed automatically.",
+        "Child-household hand-offs are ordinary casework, not escalations.",
+        "For ACA-2026/2 hand-offs, the assistant did not draft a triage note.",
+    ]
 
     return "\n".join(lines)

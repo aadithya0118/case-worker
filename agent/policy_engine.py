@@ -1,14 +1,15 @@
 """
-Policy engine — reads policy_rules.json and classifies a referral's
-requested_action as PERMITTED or REQUIRES_APPROVAL.
+Policy engine.
 
-Design intent: this module contains no policy decisions of its own.
-Every judgement call (what's permitted, what's restricted, what the
-safe default is) lives in policy_rules.json. If policy ACA-2026/1 is
-revised, or the day-two requirement change touches what the agent may
-do unsupervised, that change belongs in the JSON file. This module
-should not need to change for a policy update to take effect.
+The policy is data, not control flow. Rules are re-read for every referral,
+so a policy amendment that arrives while a queue is being processed can
+apply to referrals that have not yet been triaged.
+
+ACA-2026/2 adds a separate child-household hand-off condition. It is not
+represented as an escalation because the amendment explicitly distinguishes
+a caseworker hand-off from section-4 escalation.
 """
+
 import json
 import os
 from dataclasses import dataclass
@@ -22,7 +23,7 @@ REQUIRES_APPROVAL = "REQUIRES_APPROVAL"
 
 @dataclass
 class Classification:
-    status: str            # PERMITTED or REQUIRES_APPROVAL
+    status: str
     action_type: str
     policy_basis: str
     note: str
@@ -30,15 +31,28 @@ class Classification:
 
 class PolicyEngine:
     def __init__(self, rules_path=RULES_PATH):
-        with open(rules_path, encoding="utf-8") as f:
+        self.rules_path = rules_path
+        self.rules = {}
+        self.policy_reference = "unknown"
+        self.reload()
+
+    def reload(self):
+        with open(self.rules_path, encoding="utf-8") as f:
             self.rules = json.load(f)
         self.policy_reference = self.rules.get("policy_reference", "unknown")
 
-    def classify(self, requested_action: str) -> Classification:
-        normalised = requested_action.strip().lower()
+    def _normalise(self, text):
+        return " ".join((text or "").strip().lower().split())
+
+    def classify(self, requested_action):
+        # Reload before every decision so an amendment can take effect
+        # for referrals still waiting in the queue.
+        self.reload()
+
+        normalised = self._normalise(requested_action)
 
         for rule in self.rules.get("restricted_action_types", []):
-            if normalised in [m.lower() for m in rule["match"]]:
+            if normalised in [self._normalise(m) for m in rule["match"]]:
                 return Classification(
                     status=REQUIRES_APPROVAL,
                     action_type=rule["action_type"],
@@ -47,7 +61,7 @@ class PolicyEngine:
                 )
 
         for rule in self.rules.get("permitted_action_types", []):
-            if normalised in [m.lower() for m in rule["match"]]:
+            if normalised in [self._normalise(m) for m in rule["match"]]:
                 return Classification(
                     status=PERMITTED,
                     action_type=rule["action_type"],
@@ -55,12 +69,19 @@ class PolicyEngine:
                     note=rule["note"],
                 )
 
-        # Fails safe: an action type the policy engine has never seen
-        # is not assumed to be fine. See policy_rules.json -> default_when_unmatched.
         default = self.rules["default_when_unmatched"]
         return Classification(
             status=REQUIRES_APPROVAL if default["requires_approval"] else PERMITTED,
             action_type=default["action_type"],
             policy_basis=default["policy_basis"],
             note=default["note"],
+        )
+
+    def child_household_rule(self):
+        self.reload()
+        return (
+            self.rules
+            .get("amendments", {})
+            .get("ACA-2026/2", {})
+            .get("household_child_handoff")
         )

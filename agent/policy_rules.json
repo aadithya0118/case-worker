@@ -1,85 +1,134 @@
 {
   "policy_reference": "ACA-2026/1",
-  "_comment": "Structured translation of authority-policy.md. Matching is done on the referral's requested_action field, normalised to lowercase. This file is the single source of truth for what the agent may do unsupervised -- agent code must never hardcode a policy decision. If policy changes, this file changes; the agent loop does not.",
-
+  "amendments": {
+    "ACA-2026/2": {
+      "in_force": true,
+      "policy_reference": "ACA-2026/2",
+      "household_child_handoff": {
+        "enabled": true,
+        "policy_basis": "3.9",
+        "action_type": "child_household_handoff",
+        "note": "A triage note must not be drafted for a referral concerning a household that includes a person under 18. The assistant must hand the case to a caseworker with the work already established.",
+        "unknown_household_also_applies": true
+      }
+    }
+  },
   "permitted_action_types": [
     {
-      "match": ["review award"],
+      "match": [
+        "review award"
+      ],
       "action_type": "assessment_recommendation",
       "policy_basis": "2.3, 2.4",
       "note": "A review is an assessment, not a change to entitlement. The agent may draft a triage note recommending review; it must not alter the award itself."
     },
     {
-      "match": ["review household composition"],
+      "match": [
+        "review household composition"
+      ],
       "action_type": "assessment_recommendation",
       "policy_basis": "2.3, 2.4",
       "note": "Recommending a household composition review is permitted. Actually changing recorded composition, if that would affect entitlement, is not (falls under 3.1)."
     },
     {
-      "match": ["draft explanatory note", "draft triage note for supervisor"],
+      "match": [
+        "draft explanatory note",
+        "draft triage note for supervisor"
+      ],
       "action_type": "draft_note",
       "policy_basis": "2.4",
       "note": "Drafting is explicitly permitted. A drafted note has no effect on the case until a caseworker adopts it."
     },
     {
-      "match": ["flag for contact attempt"],
+      "match": [
+        "flag for contact attempt"
+      ],
       "action_type": "flag",
       "policy_basis": "2.6",
       "note": "Flagging for human attention is explicitly permitted."
     }
   ],
-
   "restricted_action_types": [
     {
-      "match": ["suspend assistance pending investigation", "suspend assistance", "terminate assistance", "reinstate assistance", "reinstate award"],
+      "match": [
+        "suspend assistance pending investigation",
+        "suspend assistance",
+        "terminate assistance",
+        "reinstate assistance",
+        "reinstate award"
+      ],
       "action_type": "suspension_or_termination",
       "policy_basis": "3.2",
       "note": "Suspension, termination, or reinstatement of an award requires supervisor approval before it is taken."
     },
     {
-      "match": ["update payment details", "change payment details", "change bank details", "change account details"],
+      "match": [
+        "update payment details",
+        "change payment details",
+        "change bank details",
+        "change account details",
+        "change the account into which payment is made"
+      ],
       "action_type": "payment_details_change",
       "policy_basis": "3.4",
       "note": "Any change to payment details, including bank or card details, requires supervisor approval."
     },
     {
-      "match": ["initiate payment", "cancel payment", "alter payment"],
+      "match": [
+        "initiate payment",
+        "cancel payment",
+        "alter payment"
+      ],
       "action_type": "payment_action",
       "policy_basis": "3.3",
       "note": "Initiation, alteration, or cancellation of a payment requires supervisor approval."
     },
     {
-      "match": ["send communication", "contact resident directly", "notify third party"],
+      "match": [
+        "send communication",
+        "contact resident directly",
+        "notify third party"
+      ],
       "action_type": "communication",
       "policy_basis": "3.5",
       "note": "Any communication sent to a resident or third party requires supervisor approval."
     },
     {
-      "match": ["disclose resident information", "share resident information"],
+      "match": [
+        "disclose resident information",
+        "share resident information"
+      ],
       "action_type": "disclosure",
       "policy_basis": "3.6",
       "note": "Disclosure of resident information outside the Department requires supervisor approval."
     },
     {
-      "match": ["record change of address"],
+      "match": [
+        "record change of address"
+      ],
       "action_type": "record_update_ambiguous",
       "policy_basis": "3.1 (via 6.1)",
       "note": "AMBIGUOUS CASE, resolved conservatively per 6.1. An address change can alter locality-based award calculation and is not clearly excluded from 3.1. Treated as requiring approval rather than assumed safe. See DECISIONS.md."
     },
     {
-      "match": ["record income change"],
+      "match": [
+        "record income change"
+      ],
       "action_type": "record_update_ambiguous",
       "policy_basis": "3.1 (via 6.1)",
       "note": "AMBIGUOUS CASE, resolved conservatively per 6.1. Income change feeds directly into award-amount calculation; recording it is not clearly separable from changing the award. Treated as requiring approval rather than assumed safe. See DECISIONS.md."
     },
     {
-      "match": ["assert fraud", "record finding of fraud", "record misrepresentation"],
+      "match": [
+        "assert fraud",
+        "record finding of fraud",
+        "record misrepresentation"
+      ],
       "action_type": "finding_of_fact",
       "policy_basis": "3.7",
       "note": "Any record asserting a finding of fact about a resident's conduct, including suspected fraud, requires supervisor approval."
     }
   ],
-
   "default_when_unmatched": {
     "action_type": "unrecognised",
     "policy_basis": "6.1",
